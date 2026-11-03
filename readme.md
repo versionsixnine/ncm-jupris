@@ -42,7 +42,7 @@ ls -la jupris_ncm_prod_ready.pt jupris_vocab.json
 python jupris_cli.py "piye kabare bosku"
 ```
 
-> If `requirements.txt` is not yet present in the repo, install the minimal runtime set manually:
+> or set manually:
 > ```bash
 > pip install torch numpy
 > ```
