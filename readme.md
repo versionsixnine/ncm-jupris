@@ -1,9 +1,11 @@
 # JuprisMini-NCM — Trilingual Multiscale Concept Model & Tool Router
-Question  : NEXT CONCEPT MODEELING -CHAT ? ..
+Question: NEXT CONCEPT MODELING — CHAT?
 
 **Status:** Production Ready (`v6-wsp` / CPU Inference ~33–45ms)
 **Primary Method Reference:** [HazyResearch/ncm](https://github.com/HazyResearch/ncm)
+**Repository:** [github.com/versionsixnine/ncm-jupris](https://github.com/versionsixnine/ncm-jupris)
 **Scope:** Lightweight edge-oriented trilingual chat model (Indonesian, Javanese, English) with decoupled concept/tool routing and zero-gradient weight-space surgical editing.
+
 ---
 > ⚠️ **WARNING — EXPERIMENTAL STATUS**
 > This is **NOT** a production-ready daily-chat model. JuprisMini-NCM is an **experimental architecture** currently usable only as a **chat/tool-calling proof-of-concept**. Output quality, routing accuracy, and general conversational robustness are still immature and require further training, calibration, and testing before any reliable daily-use deployment.
@@ -19,14 +21,43 @@ Question  : NEXT CONCEPT MODEELING -CHAT ? ..
 
 ---
 
-## 2. Core Architecture & Engineering Rules
+## 2. Getting Started (Clone & Install)
 
-### 2.1 Upstream NCM Baseline
+```bash
+# 1. Clone the repository
+git clone https://github.com/versionsixnine/ncm-jupris.git
+cd ncm-jupris
+
+# 2. (Recommended) Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Verify checkpoint & vocab files are present
+ls -la jupris_ncm_prod_ready.pt jupris_vocab.json
+
+# 5. Run a quick CLI smoke test
+python jupris_cli.py "piye kabare bosku"
+```
+
+> If `requirements.txt` is not yet present in the repo, install the minimal runtime set manually:
+> ```bash
+> pip install torch numpy
+> ```
+> (`ncm_api_server.py` uses only the Python standard library `ThreadingHTTPServer` — no FastAPI/Uvicorn required.)
+
+---
+
+## 3. Core Architecture & Engineering Rules
+
+### 3.1 Upstream NCM Baseline
 This project preserves the core **Next-Concept Model (NCM)** paradigm from `HazyResearch/ncm`:
 - **Multiscale Residual VQ Tokenizer (`VQ-VAE`):** Encodes a token sequence into a hierarchy of discrete latent codes across multiple scales (`levels`).
 - **Next-Concept Generator (`NextConceptGenerator`):** Predicts the discrete code hierarchy from coarse to fine (`head_coarse[0..L-1]` followed by `head_token`). Each level predicts its positions in parallel rather than token-by-token autoregressive decoding.
 
-### 2.2 Explicit Separation: Concept Labels vs. VQ Codebooks
+### 3.2 Explicit Separation: Concept Labels vs. VQ Codebooks
 Dataset-level `concept_id` values are **supervision metadata for routing and filtering**, NOT indices inside the VQ-VAE learned codebooks:
 
 | Concept ID | Route Type | Tool Name | Intended Semantic / Domain |
@@ -47,7 +78,7 @@ Dataset-level `concept_id` values are **supervision metadata for routing and fil
 
 ---
 
-## 3. Repository Structure (Production Layout)
+## 4. Repository Structure (Production Layout)
 
 ```text
 ├── ncm_core.py                  # Core JuprisNCM, VQ-VAE Tokenizer, Concept Router & NextConceptGenerator
@@ -57,6 +88,7 @@ Dataset-level `concept_id` values are **supervision metadata for routing and fil
 ├── ncm_wsp_surgeon.py           # MIT Closed-Form Weight-Space Surgical Editor & Live Vocab Injector
 ├── jupris_cli.py                # Standalone CLI benchmark & interactive chat runner
 ├── ncm_train.py                 # Full multiscale VQ-VAE + Next-Concept training pipeline
+├── requirements.txt             # Python dependencies
 ├── systemd/
 │   └── jupris-ncm-api.service   # Systemd unit for persistent background daemon on Port 8893
 └── web/
@@ -66,14 +98,14 @@ Dataset-level `concept_id` values are **supervision metadata for routing and fil
 
 ---
 
-## 4. Quickstart & Production Operations
+## 5. Quickstart & Production Operations
 
-### 4.1 Run via CLI
+### 5.1 Run via CLI
 ```bash
 python jupris_cli.py "kopi rokok wis" "piye kabare bosku" "food in indonesian" "nyalakan mesin"
 ```
 
-### 4.2 Run the Native HTTP API Server (Port 8893)
+### 5.2 Run the Native HTTP API Server (Port 8893)
 `ncm_api_server.py` uses Python's built-in `ThreadingHTTPServer` (zero FastAPI/Uvicorn dependency overhead) and performs an automatic warm-up pass on boot:
 
 ```bash
@@ -94,7 +126,7 @@ curl -s -X POST http://127.0.0.1:8893/v1/chat \
 
 - `POST http://127.0.0.1:8893/v1/reload` — Thread-safe hot-reload of `jupris_vocab.json` and `jupris_ncm_prod_ready.pt` with zero downtime.
 
-### 4.3 Live Surgical Editing & Vocabulary Injection (`ncm_wsp_surgeon.py`)
+### 5.3 Live Surgical Editing & Vocabulary Injection (`ncm_wsp_surgeon.py`)
 To inject new vocabulary words (up to slot 16,384) or align specific prompt-response pairs in < 2 seconds without backpropagation (using closed-form Ridge projection `W_new = W + ΔY · Hᵀ(HHᵀ + λI)⁻¹`):
 
 ```bash
@@ -105,11 +137,11 @@ This script automatically registers unknown tokens into `jupris_vocab.json`, upd
 
 ---
 
-## 5. Next-Phase Roadmap: Teacher-Guided NCM Training
+## 6. Next-Phase Roadmap: Teacher-Guided NCM Training
 
 **Core Principle:** NCM remains the sole inference architecture of Jupris. External teacher models (e.g., Qwen) are used strictly offline to audit, clean, and score the training corpus—never to replace NCM with a standard autoregressive Transformer.
 
-### 5.1 Teacher-Guided Data Curation Pipeline
+### 6.1 Teacher-Guided Data Curation Pipeline
 
 ```text
 [Raw jupris_corpus.jsonl]
@@ -130,7 +162,7 @@ This script automatically registers unknown tokens into `jupris_vocab.json`, upd
       Learns coarse-to-fine level-wise code prediction from high-purity targets
 ```
 
-### 5.2 Trilingual Data Contract (`jupris_corpus.jsonl`)
+### 6.2 Trilingual Data Contract (`jupris_corpus.jsonl`)
 Every record in the training corpus must follow this canonical JSONL schema:
 
 ```json
@@ -146,7 +178,7 @@ Every record in the training corpus must follow this canonical JSONL schema:
 
 ---
 
-## 6. Acceptance Checklist for Future Contributors
+## 7. Acceptance Checklist for Future Contributors
 
 Before merging changes to `ncm_core.py` or replacing `jupris_ncm_prod_ready.pt`, verify:
 
