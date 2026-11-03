@@ -1,5 +1,6 @@
 # JuprisMini-NCM — Trilingual Multiscale Concept Model & Tool Router
 Question  : NEXT CONCEPT MODEELING -CHAT ? ..
+
 **Status:** Production Ready (`v6-wsp` / CPU Inference ~33–45ms)
 **Primary Method Reference:** [HazyResearch/ncm](https://github.com/HazyResearch/ncm)
 **Scope:** Lightweight edge-oriented trilingual chat model (Indonesian, Javanese, English) with decoupled concept/tool routing and zero-gradient weight-space surgical editing.
